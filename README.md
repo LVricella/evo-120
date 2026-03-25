@@ -1,100 +1,97 @@
-## Introduction
+# EVO-120
 
-The code here was used to run the evo-league.com website from 2004 to 2014. It consists of
+## Overview
 
-a) A PHP-based ladder system where you can report wins against another player
+This project is the base for a custom **PES 6 online ecosystem** inspired by **Master League Online (MLO)**.
 
-b) A Python-based online server for Pro Evolution Soccer 6 ("Sixserver")
+The goal is not only to run a website or an online server, but to build a complete platform around PES 6 with:
 
-The evo-league.com website was hacked in late 2014 and all content was deleted. The guys stealing my code started running a website which is now defunct. It's not fair that thieves can run my code and others can't, so I'm sharing my work with everyone.
+- player accounts
+- team ownership
+- squad management
+- transfer market
+- Option File generation
+- integration with an updated `fiveserver`
+- future launcher/update support
 
-Please be aware that the code here may be vulnerable and you're running it **at your own risk**. If you find security issues, please commit your fixes to the project.
+This repository starts from the old evo-league structure, but it is being repurposed into a cleaner platform for a modern PES 6 online experience.
 
+---
 
-## Content
+## Main Goals
 
-Folders:
+The long-term objective of this project is to support:
 
-**/http** - The actual website (PHP 5.5 required)
+1. **Web administration**
+   - assign a user to a specific PES team
+   - manage rosters
+   - review users, teams and activity
+   - trigger Option File builds
 
-**/cron** - scripts that should be run from cron jobs (if Sixserver is used)
+2. **MLO-style team ownership**
+   - each user controls one team
+   - users can buy and sell players
+   - squad changes are stored centrally
 
-**/Sixserver** - PES6 online server based on fiveserver (https://sites.google.com/site/fiveservercom/home)
+3. **Global Option File generation**
+   - all team edits are merged into one single global PES 6 Option File
+   - only the administrator downloads and distributes the final build
+   - the generated data can later be packaged for a launcher or update system
 
-**/setup** - database setup script
+4. **Integration with `fiveserver`**
+   - `fiveserver` will be used as the updated online game server
+   - this repository will provide the web/admin layer around it
+   - old Sixserver-era assumptions will gradually be replaced
 
+---
 
-## Requirements
+## Repository Structure
 
-PHP 5.5 and a MySQL database are required. PHP must be configured to allow short tags (short_open_tag = On in php.ini).
+### `/http`
+PHP website and administration panel.
 
-You'll need at least a virtual server to run this. I recommend a Linux-based server (eg. Debian).
+This is where the following modules live:
 
-To run Sixserver properly, I recommend a server with at least 1GB RAM.
+- user-facing site pages
+- admin pages
+- roster/team assignment tools
+- market tools
+- Option File build tools
 
+### `/cron`
+Scheduled scripts.
 
-## Installation
+This folder is intended for:
 
-a) Create an empty database (eg. 'evo') and import the setup script (/setup/dbinit.sql).
+- maintenance tasks
+- syncing data
+- future Option File build automation
+- future integration jobs with `fiveserver`
 
-b) Copy the contents of /http to your server document root (eg. /var/www/yoursite/http/)
+### `/Sixserver`
+Legacy code from the original evo-league project.
 
-c) Edit http/config.php to configure your domain and database connection information
+This folder is kept for historical and compatibility reasons, but it is **not the long-term online server target** for this project.
 
-d) Configure your web server (eg. Apache) to serve pages from this directory
+The updated target server is `fiveserver`, maintained separately.
 
-You should be able to login using username: *Admin*, password: *changeme*. Edit your profile (http://yoursite/editprofile.php) immediately to change your password.
+### `/setup`
+Database setup scripts.
 
-You can reach the administration panel at http://yoursite/Admin/
+This contains the SQL schema used by the website and supporting tools.
 
+---
 
-## Sixserver
+## Current Direction
 
-This PES6 online server was created by juce and reddwarf in Python.
+This project is being adapted to support the following architecture:
 
-Homepage: https://sites.google.com/site/fiveservercom/home
+```text
+[fiveserver]
+    online server / lobbies / matches
 
-I changed the code so it interfaces with the website and fixed a couple of bugs. Please refer to the homepage for installation instructions. The required database tables for Sixserver are already included in the database setup script.
+[this repository]
+    website / admin / MLO logic / market / OF build management
 
-
-## Cron jobs
-
-If you want Sixserver to work with the website, you'll have to install a couple of cron jobs. An example crontab is listed below.
-```
-#m h dom mon dow user        command
-# Site
-40  *     * * *   root        nice /usr/bin/php /var/www/yoursite/cron/updateTeamladder.php > /dev/null 2>&1
-59 23     * * *   root        /var/www/yoursite/cron/last-day-of-month.sh && /var/www/yoursite/cron/newLadderSeason.php
-# Sixserver
-*/3 *     * * *   root        nice /usr/bin/php /var/www/yoursite/cron/setDisconnectsInGames.php > /dev/null 2>&1
-*/5 *     * * *   root        nice /usr/bin/php /var/www/yoursite/cron/setDisconnects.php > /dev/null 2>&1
-*/7 *     * * *   root        nice /usr/bin/php /var/www/yoursite/cron/setWordBans.php > /dev/null 2>&1
-*/2 *     * * *   www-data    nice /usr/bin/php /var/www/yoursite/cron/reportSixToLadder.php > /dev/null 2>&1
-35 23     * * *   root        /var/www/yoursite/cron/last-day-of-month.sh && /var/www/yoursite/cron/maintenance.sh
-58 23     * * *   root        /var/www/yoursite/cron/last-day-of-month.sh && /var/www/yoursite/cron/newSixserverSeason.php
-```
-
-## License
-
-All code written by me is covered by the MIT license, which means you can basically use it as you like. In addition, I request that:
-
-- You do not remove the credits page
-- You do not remove the 'powered by evo-league' in the bottom right corner
-- You commit fixes for security issues back to this project
-
-
-## Support
-
-You may open an issue at https://github.com/IkeC/evo-league/issues if you have a questions or problems. Please include as much information as you can, eg. server log files, system, component versions and so on. Please note that I probably can't or won't help with issues such as how to run a webserver, install PHP or similar tasks.
-
-
-## Thanks
-
-Many thanks to:
-
-* Peter Hendrix for the WebLeague php module that I started the site with back in 2004
-* juce and reddwarf for their PES6 online server
-* Vjacheslav Trushkin (cyberalien) for the phpbb Morpheus skin
-* All administrators, moderators and players developing the site over the years
-
-*IkeC &copy; 2015*
+[Option File Builder]
+    generates the final global PES 6 Option File from website data
