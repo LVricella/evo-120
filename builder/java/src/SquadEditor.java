@@ -2,6 +2,12 @@ import java.util.List;
 
 public class SquadEditor {
 
+    private TeamOffsetResolver offsetResolver;
+
+    public SquadEditor() {
+        this.offsetResolver = new TeamOffsetResolver();
+    }
+
     public void applyTeamPlayers(OptionFile of, int teamId, List<Integer> players) {
         System.out.println("------------------------------------------");
         System.out.println("SquadEditor.applyTeamPlayers()");
@@ -11,18 +17,43 @@ public class SquadEditor {
 
         validatePlayers(players);
 
+        if (!offsetResolver.hasTeam(teamId)) {
+            System.out.println("No offset mapping for team " + teamId + ". Skipping real write.");
+            debugKnownAreas(of, teamId, players);
+            return;
+        }
+
+        int primaryOffset = offsetResolver.getPrimaryOffset(teamId);
+        int mirrorOffset = offsetResolver.getMirrorOffset(teamId);
+
+        System.out.println("Resolved offsets:");
+        System.out.println("  primary = " + primaryOffset);
+        System.out.println("  mirror  = " + mirrorOffset);
+
         // ==================================================
-        // CURRENT STATUS:
-        // We are not yet writing squad data to the OF.
+        // FIRST REAL WRITE STEP
+        // ==================================================
         //
-        // This class is the place where the real logic will go:
-        // 1. resolve teamId -> squad offsets
-        // 2. write ordered 16-bit player IDs
-        // 3. update mirrored/internal squad block(s)
-        // 4. recalculate checksum/control data
+        // We write ordered 16-bit player IDs into:
+        // - primary offset
+        // - mirror offset
+        //
+        // This is still experimental and depends on correct
+        // team mappings / real squad block structure.
         // ==================================================
 
-        debugKnownAreas(of, teamId, players);
+        writePlayersArray(of, primaryOffset, players);
+        writePlayersArray(of, mirrorOffset, players);
+
+        System.out.println("Players written (experimental) for team " + teamId);
+    }
+
+    private void writePlayersArray(OptionFile of, int offset, List<Integer> players) {
+        for (int i = 0; i < players.size(); i++) {
+            int playerId = players.get(i);
+            int writeOffset = offset + (i * OptionFileConstants.PLAYER_ID_SIZE);
+            of.writeUInt16LE(writeOffset, playerId);
+        }
     }
 
     private void validatePlayers(List<Integer> players) {
@@ -90,8 +121,6 @@ public class SquadEditor {
             System.out.println("Last player to apply: " + players.get(players.size() - 1));
         }
 
-        // Placeholder diagnostic:
-        // read first few bytes from observed diff zones
         int aSample = of.readByte(OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START);
         int bSample = of.readByte(OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START);
 
