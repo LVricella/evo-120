@@ -3,10 +3,11 @@
 # ==========================================
 # run-builder.sh
 # ==========================================
-# Placeholder builder runner.
+# Main builder wrapper.
 #
-# Future usage:
-# ./run-builder.sh <base_opt> <snapshot_json> <output_dir>
+# Current behavior:
+# - if Java builder runner exists, use it
+# - otherwise fallback to simple base OPT copy
 # ==========================================
 
 BASE_OPT="$1"
@@ -30,6 +31,10 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+JAVA_RUNNER="$SCRIPT_DIR/run-java-builder.sh"
+OUTPUT_OPT="$OUTPUT_DIR/KONAMI-WIN32PES6OPT"
+
 echo "=========================================="
 echo "Option File Builder"
 echo "=========================================="
@@ -38,10 +43,19 @@ echo "Snapshot JSON: $SNAPSHOT_JSON"
 echo "Output dir:    $OUTPUT_DIR"
 echo "=========================================="
 
-# Placeholder output
-cp "$BASE_OPT" "$OUTPUT_DIR/KONAMI-WIN32PES6OPT"
+if [ -f "$JAVA_RUNNER" ]; then
+  bash "$JAVA_RUNNER" "$BASE_OPT" "$SNAPSHOT_JSON" "$OUTPUT_OPT"
+  if [ $? -eq 0 ]; then
+    echo "Java builder completed."
+    exit 0
+  fi
 
-echo "Builder placeholder completed."
-echo "Output created at: $OUTPUT_DIR/KONAMI-WIN32PES6OPT"
+  echo "Java builder failed. Falling back to placeholder copy."
+fi
+
+cp "$BASE_OPT" "$OUTPUT_OPT"
+
+echo "Placeholder copy completed."
+echo "Output created at: $OUTPUT_OPT"
 
 exit 0
