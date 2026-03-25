@@ -1,7 +1,3 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +12,16 @@ public class OptionFileBuilder {
     }
 
     public void build(Map<Integer, List<Integer>> teams) throws Exception {
-        File baseFile = new File(basePath);
-        File outputFile = new File(outputPath);
+        OptionFile of = new OptionFile(basePath);
 
-        if (!baseFile.exists()) {
-            throw new Exception("Base Option File not found: " + basePath);
-        }
+        System.out.println("==========================================");
+        System.out.println("Option File loaded");
+        System.out.println("==========================================");
+        System.out.println("File size: " + of.length() + " bytes");
+
+        // Info básica de prueba
+        int first4 = of.readUInt32LE(0);
+        System.out.println("First 4 bytes as UInt32LE: " + first4);
 
         System.out.println("==========================================");
         System.out.println("Applying squads (placeholder)");
@@ -32,39 +32,17 @@ public class OptionFileBuilder {
             List<Integer> players = entry.getValue();
 
             System.out.println("Applying team " + teamId + " with " + players.size() + " players");
+
+            // Placeholder real:
+            // todavía no tocamos squads, solo imprimimos
+            // Next step:
+            // applyTeamPlayers(of, teamId, players);
         }
 
-        // ==========================================
-        // TEMPORAL: copiar archivo base
-        // ==========================================
-        copyFile(baseFile, outputFile);
+        of.save(outputPath);
 
-        // ==========================================
-        // FUTURO:
-        // - cargar OF binario
-        // - ubicar squads
-        // - reemplazar jugadores
-        // - recalcular checksum
-        // ==========================================
-    }
-
-    private void copyFile(File source, File target) throws IOException {
-        File parent = target.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-
-        FileInputStream in = new FileInputStream(source);
-        FileOutputStream out = new FileOutputStream(target);
-
-        byte[] buffer = new byte[8192];
-        int len;
-
-        while ((len = in.read(buffer)) > 0) {
-            out.write(buffer, 0, len);
-        }
-
-        in.close();
-        out.close();
+        System.out.println("==========================================");
+        System.out.println("Option File saved to: " + outputPath);
+        System.out.println("==========================================");
     }
 }
