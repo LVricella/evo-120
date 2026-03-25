@@ -13,18 +13,18 @@ public class OptionFileBuilder {
 
     public void build(Map<Integer, List<Integer>> teams) throws Exception {
         OptionFile of = new OptionFile(basePath);
+        SquadEditor squadEditor = new SquadEditor();
 
         System.out.println("==========================================");
         System.out.println("Option File loaded");
         System.out.println("==========================================");
         System.out.println("File size: " + of.length() + " bytes");
 
-        // Info básica de prueba
         int first4 = of.readUInt32LE(0);
         System.out.println("First 4 bytes as UInt32LE: " + first4);
 
         System.out.println("==========================================");
-        System.out.println("Applying squads (placeholder)");
+        System.out.println("Applying teams");
         System.out.println("==========================================");
 
         for (Map.Entry<Integer, List<Integer>> entry : teams.entrySet()) {
@@ -33,10 +33,7 @@ public class OptionFileBuilder {
 
             System.out.println("Applying team " + teamId + " with " + players.size() + " players");
 
-            // Placeholder real:
-            // todavía no tocamos squads, solo imprimimos
-            // Next step:
-            // applyTeamPlayers(of, teamId, players);
+            squadEditor.applyTeamPlayers(of, teamId, players);
         }
 
         of.save(outputPath);
