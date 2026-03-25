@@ -1369,4 +1369,117 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+--
+-- ============================================
+-- MLO / Option File tables
+-- ============================================
+--
+
+--
+-- Table structure for table `of_team_assignments`
+--
+
+DROP TABLE IF EXISTS `of_team_assignments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `of_team_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sixTeamId` int(4) NOT NULL,
+  `profile_id` int(10) unsigned NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_team_active` (`sixTeamId`,`is_active`),
+  UNIQUE KEY `uniq_profile_active` (`profile_id`,`is_active`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `of_team_assignments` WRITE;
+/*!40000 ALTER TABLE `of_team_assignments` DISABLE KEYS */;
+/*!40000 ALTER TABLE `of_team_assignments` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `of_team_roster`
+--
+
+DROP TABLE IF EXISTS `of_team_roster`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `of_team_roster` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sixTeamId` int(4) NOT NULL,
+  `pesPlayerId` int(11) NOT NULL,
+  `squad_order` int(11) NOT NULL,
+  `slot_type` varchar(20) NOT NULL DEFAULT 'squad',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_team_order` (`sixTeamId`,`squad_order`),
+  UNIQUE KEY `uniq_team_player` (`sixTeamId`,`pesPlayerId`),
+  KEY `idx_team_slot` (`sixTeamId`,`slot_type`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `of_team_roster` WRITE;
+/*!40000 ALTER TABLE `of_team_roster` DISABLE KEYS */;
+/*!40000 ALTER TABLE `of_team_roster` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `of_market_orders`
+--
+
+DROP TABLE IF EXISTS `of_market_orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `of_market_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `seller_profile_id` int(10) unsigned NOT NULL,
+  `buyer_profile_id` int(10) unsigned DEFAULT NULL,
+  `pesPlayerId` int(11) NOT NULL,
+  `price` int(11) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'open',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_seller` (`seller_profile_id`),
+  KEY `idx_buyer` (`buyer_profile_id`),
+  KEY `idx_player` (`pesPlayerId`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `of_market_orders` WRITE;
+/*!40000 ALTER TABLE `of_market_orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `of_market_orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `of_builds`
+--
+
+DROP TABLE IF EXISTS `of_builds`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `of_builds` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `version` varchar(50) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `opt_path` varchar(255) DEFAULT NULL,
+  `db_path` varchar(255) DEFAULT NULL,
+  `manifest_path` varchar(255) DEFAULT NULL,
+  `requested_by` int(10) unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_requested_by` (`requested_by`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `of_builds` WRITE;
+/*!40000 ALTER TABLE `of_builds` DISABLE KEYS */;
+/*!40000 ALTER TABLE `of_builds` ENABLE KEYS */;
+UNLOCK TABLES;
+
 -- Dump completed on 2015-03-26 16:55:10
