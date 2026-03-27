@@ -158,6 +158,63 @@ public class OptionFileDebugger {
         System.out.println("==========================================");
     }
 
+    public void findUInt16Sequence(OptionFile of, int startOffset, int length, int[] sequence) {
+        if (length <= 0) {
+            System.out.println("findUInt16Sequence: invalid length");
+            return;
+        }
+
+        if (sequence == null || sequence.length == 0) {
+            System.out.println("findUInt16Sequence: empty sequence");
+            return;
+        }
+
+        System.out.println("==========================================");
+        System.out.println("Find UInt16LE sequence");
+        System.out.println("Start offset: " + startOffset + " (" + toHex(startOffset, 8) + ")");
+        System.out.println("Length: " + length);
+        System.out.print("Sequence: ");
+        for (int i = 0; i < sequence.length; i++) {
+            if (i > 0) System.out.print(", ");
+            System.out.print(sequence[i] + " (" + toHex(sequence[i], 4) + ")");
+        }
+        System.out.println();
+        System.out.println("==========================================");
+
+        int end = startOffset + length;
+        int found = 0;
+        int bytesNeeded = sequence.length * 2;
+
+        for (int offset = startOffset; offset + bytesNeeded - 1 < end; offset += 2) {
+            boolean match = true;
+
+            for (int i = 0; i < sequence.length; i++) {
+                int value = of.readUInt16LE(offset + (i * 2));
+                if (value != sequence[i]) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match) {
+                found++;
+                System.out.println(
+                    "sequence match #" + found +
+                    " at offset=" + offset +
+                    " (" + toHex(offset, 8) + ")"
+                );
+            }
+        }
+
+        if (found == 0) {
+            System.out.println("No sequence matches found.");
+        } else {
+            System.out.println("Total sequence matches: " + found);
+        }
+
+        System.out.println("==========================================");
+    }
+
     public void printKnownAreas(OptionFile of) {
         System.out.println("==========================================");
         System.out.println("Known / suspected areas");
