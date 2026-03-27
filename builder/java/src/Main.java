@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,10 @@ public class Main {
         Integer findU16Length = null;
         Integer findU16Value = null;
 
+        Integer findSeqOffset = null;
+        Integer findSeqLength = null;
+        int[] findSequence = null;
+
         for (int i = 0; i < args.length; i++) {
             if ("--base".equals(args[i]) && i + 1 < args.length) {
                 basePath = args[++i];
@@ -52,6 +57,10 @@ public class Main {
                 findU16Offset = parseIntArg(args[++i]);
                 findU16Length = parseIntArg(args[++i]);
                 findU16Value = parseIntArg(args[++i]);
+            } else if ("--find-seq".equals(args[i]) && i + 3 < args.length) {
+                findSeqOffset = parseIntArg(args[++i]);
+                findSeqLength = parseIntArg(args[++i]);
+                findSequence = parseSequenceArg(args[++i]);
             } else if ("--report".equals(args[i]) && i + 1 < args.length) {
                 reportPath = args[++i];
             }
@@ -83,7 +92,10 @@ public class Main {
                     compareLength,
                     findU16Offset,
                     findU16Length,
-                    findU16Value
+                    findU16Value,
+                    findSeqOffset,
+                    findSeqLength,
+                    findSequence
                 );
                 return;
             }
@@ -128,7 +140,10 @@ public class Main {
         Integer compareLength,
         Integer findU16Offset,
         Integer findU16Length,
-        Integer findU16Value
+        Integer findU16Value,
+        Integer findSeqOffset,
+        Integer findSeqLength,
+        int[] findSequence
     ) throws Exception {
         if (basePath == null) {
             System.out.println("Debug mode requires --base <base_opt>");
@@ -172,7 +187,16 @@ public class Main {
             );
         }
 
-        if (dumpBytesOffset == null && dumpU16Offset == null && compareOffsetA == null && findU16Offset == null) {
+        if (findSeqOffset != null && findSeqLength != null && findSequence != null) {
+            debugger.findUInt16Sequence(
+                of,
+                findSeqOffset.intValue(),
+                findSeqLength.intValue(),
+                findSequence
+            );
+        }
+
+        if (dumpBytesOffset == null && dumpU16Offset == null && compareOffsetA == null && findU16Offset == null && findSeqOffset == null) {
             System.out.println("Dumping observed diff region A as UInt16LE...");
             debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START, 24);
 
@@ -214,6 +238,25 @@ public class Main {
         return Integer.parseInt(v);
     }
 
+    private static int[] parseSequenceArg(String value) {
+        String[] parts = value.split(",");
+        List<Integer> values = new ArrayList<Integer>();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.length() > 0) {
+                values.add(parseIntArg(part));
+            }
+        }
+
+        int[] result = new int[values.size()];
+        for (int i = 0; i < values.size(); i++) {
+            result[i] = values.get(i).intValue();
+        }
+
+        return result;
+    }
+
     private static void printUsage() {
         System.out.println("Usage:");
         System.out.println("  Build mode:");
@@ -233,6 +276,9 @@ public class Main {
         System.out.println("");
         System.out.println("  Debug mode find UInt16LE value:");
         System.out.println("    java Main --debug --base <base_opt> --find-u16 <offset> <length> <value>");
+        System.out.println("");
+        System.out.println("  Debug mode find UInt16LE sequence:");
+        System.out.println("    java Main --debug --base <base_opt> --find-seq <offset> <length> <v1,v2,v3>");
         System.out.println("");
         System.out.println("  Optional report output:");
         System.out.println("    --report <path_to_txt>");
