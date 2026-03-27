@@ -11,7 +11,7 @@ Load a base `KONAMI-WIN32PES6OPT`, apply team roster changes from `snapshot.json
 At the current stage, the Java builder can:
 
 - read the input snapshot JSON
-- parse `teams -> ordered player IDs`
+- parse teams and ordered player IDs
 - load the base Option File as binary data
 - resolve team offsets from external config
 - write player IDs experimentally into primary and mirror offsets
@@ -22,26 +22,41 @@ At the current stage, the Java builder can:
 
 The current build pipeline is still **experimental**.
 
-It does **not yet guarantee**:
-- correct real squad offsets for all teams
+It does NOT yet guarantee:
+
+- correct squad offsets for all teams
 - correct mirrored/internal block logic
 - correct PES 6 checksum recalculation
-- full compatibility with the final in-game Option File format
+- full compatibility with the in-game Option File format
 
-## Current Java structure
+## Java structure
 
-- `Main.java` → entry point
-- `JsonParser.java` → parses `snapshot.json`
-- `OptionFile.java` → binary read/write wrapper
-- `OptionFileConstants.java` → known OF areas and constants
-- `TeamOffsetResolver.java` → teamId -> offsets
-- `SquadEditor.java` → experimental player writing
-- `ChecksumUpdater.java` → checksum placeholder
-- `OptionFileBuilder.java` → orchestrates the build
+- Main.java → entry point  
+- JsonParser.java → parses snapshot  
+- OptionFile.java → binary reader/writer  
+- OptionFileConstants.java → known OF offsets  
+- TeamOffsetResolver.java → teamId → offsets  
+- SquadEditor.java → squad writing logic  
+- ChecksumUpdater.java → checksum placeholder  
+- OptionFileBuilder.java → orchestrator  
 
 ## External config
 
-Team offsets are currently loaded from:
+Team offsets are loaded from:
 
-```text
 builder/config/team-offsets.properties
+
+Example:
+
+teamId=primaryOffset,mirrorOffset  
+1=0x0A1080,0x0A3080  
+
+## CLI usage
+
+java Main --base /path/to/KONAMI-WIN32PES6OPT --snapshot /path/to/snapshot.json --output /path/to/output/KONAMI-WIN32PES6OPT
+
+## Next milestone
+
+- replace placeholder offsets with real ones  
+- validate real squad write locations  
+- implement correct checksum logic  
