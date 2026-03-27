@@ -57,6 +57,39 @@ function ofBuildStatusLabel($status) {
     return ucfirst($status);
 }
 
+function ofPathToRelativeUrl($absolutePath) {
+    if (!$absolutePath) {
+        return "";
+    }
+
+    $normalized = str_replace("\\", "/", $absolutePath);
+    $marker = "/storage/";
+
+    $pos = strpos($normalized, $marker);
+    if ($pos === false) {
+        return "";
+    }
+
+    return substr($normalized, $pos);
+}
+
+function ofRenderBuildFileLink($absolutePath, $label) {
+    if (!$absolutePath) {
+        return "-";
+    }
+
+    if (!file_exists($absolutePath)) {
+        return htmlspecialchars($label) . " (missing)";
+    }
+
+    $url = ofPathToRelativeUrl($absolutePath);
+    if (!$url) {
+        return htmlspecialchars($label);
+    }
+
+    return '<a href="' . htmlspecialchars($url) . '" target="_blank">' . htmlspecialchars($label) . '</a>';
+}
+
 ?>
 <html>
 <head>
@@ -89,9 +122,10 @@ function ofBuildStatusLabel($status) {
     <th>Version</th>
     <th>Status</th>
     <th>Requested By</th>
+    <th>OPT</th>
+    <th>DB</th>
+    <th>Manifest</th>
     <th>OPT Path</th>
-    <th>DB Path</th>
-    <th>Manifest Path</th>
     <th>Created At</th>
     <th>Finished At</th>
 </tr>
@@ -105,9 +139,10 @@ while ($row = mysql_fetch_assoc($res)) {
     <td><?php echo htmlspecialchars($row['version']); ?></td>
     <td><?php echo htmlspecialchars(ofBuildStatusLabel($row['status'])); ?></td>
     <td><?php echo intval($row['requested_by']); ?></td>
+    <td><?php echo ofRenderBuildFileLink($row['opt_path'], 'Download OPT'); ?></td>
+    <td><?php echo ofRenderBuildFileLink($row['db_path'], 'Download DB'); ?></td>
+    <td><?php echo ofRenderBuildFileLink($row['manifest_path'], 'View Manifest'); ?></td>
     <td><?php echo htmlspecialchars($row['opt_path']); ?></td>
-    <td><?php echo htmlspecialchars($row['db_path']); ?></td>
-    <td><?php echo htmlspecialchars($row['manifest_path']); ?></td>
     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
     <td><?php echo htmlspecialchars($row['finished_at']); ?></td>
 </tr>
