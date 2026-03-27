@@ -1,22 +1,10 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TeamOffsetResolver {
-
-    // =========================================================
-    // TEMPORARY / MANUAL TEAM OFFSET MAPPING
-    // =========================================================
-    //
-    // This is the first step toward real squad writing.
-    //
-    // For now:
-    // - we support manual team -> offset mapping
-    // - we keep one primary offset and one mirrored offset
-    //
-    // Later:
-    // - replace with real mapping logic from PES 6 editor analysis
-    // - or load mapping from config / generated data
-    // =========================================================
 
     private Map<Integer, Integer> primaryOffsets;
     private Map<Integer, Integer> mirrorOffsets;
@@ -26,34 +14,101 @@ public class TeamOffsetResolver {
         mirrorOffsets = new HashMap<Integer, Integer>();
 
         loadDefaults();
+        loadExternalConfig();
     }
 
     private void loadDefaults() {
-        // =====================================================
-        // IMPORTANT:
-        // These are placeholder mappings.
-        //
-        // They are NOT guaranteed to match real PES 6 teams yet.
-        // They only provide structure so the codebase can move
-        // from "diagnostic mode" to "write-capable mode".
-        //
-        // Replace these with real values as soon as you map them.
-        // =====================================================
-
-        // Example dummy mappings:
-        // teamId -> primary block offset
+        // Fallback defaults only.
         primaryOffsets.put(1,  0x0A1080);
         primaryOffsets.put(2,  0x0A10C0);
         primaryOffsets.put(3,  0x0A1100);
         primaryOffsets.put(4,  0x0A1140);
         primaryOffsets.put(5,  0x0A1180);
 
-        // teamId -> mirror block offset
         mirrorOffsets.put(1,  0x0A3080);
         mirrorOffsets.put(2,  0x0A30C0);
         mirrorOffsets.put(3,  0x0A3100);
         mirrorOffsets.put(4,  0x0A3140);
         mirrorOffsets.put(5,  0x0A3180);
+    }
+
+    private void loadExternalConfig() {
+        try {
+            File configFile = resolveConfigFile();
+            if (configFile == null || !configFile.exists()) {
+                System.out.println("TeamOffsetResolver: external config not found, using defaults.");
+                return;
+            }
+
+            System.out.println("TeamOffsetResolver: loading config from " + configFile.getAbsolutePath());
+
+            BufferedReader br = new BufferedReader(new FileReader(configFile));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+
+                if (line.length() == 0) {
+                    continue;
+                }
+
+                if (line.startsWith("#")) {
+                    continue;
+                }
+
+                int eqPos = line.indexOf('=');
+                if (eqPos == -1) {
+                    continue;
+                }
+
+                String teamPart = line.substring(0, eqPos).trim();
+                String valuePart = line.substring(eqPos + 1).trim();
+
+                String[] parts = valuePart.split(",");
+                if (parts.length != 2) {
+                    System.out.println("Skipping invalid mapping line: " + line);
+                    continue;
+                }
+
+                int teamId = parseInt(teamPart);
+                int primaryOffset = parseInt(parts[0].trim());
+                int mirrorOffset = parseInt(parts[1].trim());
+
+                setMapping(teamId, primaryOffset, mirrorOffset);
+            }
+
+            br.close();
+
+        } catch (Exception e) {
+            System.out.println("TeamOffsetResolver: failed loading external config: " + e.getMessage());
+        }
+    }
+
+    private File resolveConfigFile() {
+        String[] candidates = new String[] {
+            "builder/config/team-offsets.properties",
+            "../config/team-offsets.properties",
+            "../../config/team-offsets.properties"
+        };
+
+        for (int i = 0; i < candidates.length; i++) {
+            File f = new File(candidates[i]);
+            if (f.exists()) {
+                return f;
+            }
+        }
+
+        return null;
+    }
+
+    private int parseInt(String value) {
+        value = value.trim().toLowerCase();
+
+        if (value.startsWith("0x")) {
+            return Integer.parseInt(value.substring(2), 16);
+        }
+
+        return Integer.parseInt(value);
     }
 
     public int getPrimaryOffset(int teamId) {
