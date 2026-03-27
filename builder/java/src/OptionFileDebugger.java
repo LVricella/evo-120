@@ -235,6 +235,85 @@ public class OptionFileDebugger {
         System.out.println("==========================================");
     }
 
+    public void findUInt16SequenceWildcard(OptionFile of, int startOffset, int length, Integer[] sequence, int stride) {
+        if (length <= 0) {
+            System.out.println("findUInt16SequenceWildcard: invalid length");
+            return;
+        }
+
+        if (sequence == null || sequence.length == 0) {
+            System.out.println("findUInt16SequenceWildcard: empty sequence");
+            return;
+        }
+
+        if (stride <= 0) {
+            System.out.println("findUInt16SequenceWildcard: invalid stride");
+            return;
+        }
+
+        System.out.println("==========================================");
+        System.out.println("Find UInt16LE sequence with wildcards");
+        System.out.println("Start offset: " + startOffset + " (" + toHex(startOffset, 8) + ")");
+        System.out.println("Length: " + length);
+        System.out.println("Stride: " + stride);
+        System.out.print("Sequence: ");
+        for (int i = 0; i < sequence.length; i++) {
+            if (i > 0) System.out.print(", ");
+            if (sequence[i] == null) {
+                System.out.print("*");
+            } else {
+                System.out.print(sequence[i] + " (" + toHex(sequence[i], 4) + ")");
+            }
+        }
+        System.out.println();
+        System.out.println("==========================================");
+
+        int end = startOffset + length;
+        int found = 0;
+        int bytesNeeded = ((sequence.length - 1) * stride) + 2;
+
+        for (int offset = startOffset; offset + bytesNeeded - 1 < end; offset += stride) {
+            boolean match = true;
+
+            for (int i = 0; i < sequence.length; i++) {
+                Integer expected = sequence[i];
+                if (expected == null) {
+                    continue;
+                }
+
+                int value = of.readUInt16LE(offset + (i * stride));
+                if (value != expected.intValue()) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match) {
+                found++;
+                System.out.print(
+                    "wildcard sequence match #" + found +
+                    " at offset=" + offset +
+                    " (" + toHex(offset, 8) + ") values="
+                );
+
+                for (int i = 0; i < sequence.length; i++) {
+                    if (i > 0) System.out.print(", ");
+                    int value = of.readUInt16LE(offset + (i * stride));
+                    System.out.print(value);
+                }
+                System.out.println();
+            }
+        }
+
+        if (found == 0) {
+            System.out.println("No wildcard sequence matches found.");
+        } else {
+            System.out.println("Total wildcard sequence matches: " + found);
+        }
+
+        System.out.println("==========================================");
+    }
+
     public void printKnownAreas(OptionFile of) {
         System.out.println("==========================================");
         System.out.println("Known / suspected areas");
