@@ -57,23 +57,7 @@ function ofBuildStatusLabel($status) {
     return ucfirst($status);
 }
 
-function ofPathToRelativeUrl($absolutePath) {
-    if (!$absolutePath) {
-        return "";
-    }
-
-    $normalized = str_replace("\\", "/", $absolutePath);
-    $marker = "/storage/";
-
-    $pos = strpos($normalized, $marker);
-    if ($pos === false) {
-        return "";
-    }
-
-    return substr($normalized, $pos);
-}
-
-function ofRenderBuildFileLink($absolutePath, $label) {
+function ofRenderDownloadLink($buildId, $type, $label, $absolutePath) {
     if (!$absolutePath) {
         return "-";
     }
@@ -82,10 +66,7 @@ function ofRenderBuildFileLink($absolutePath, $label) {
         return htmlspecialchars($label) . " (missing)";
     }
 
-    $url = ofPathToRelativeUrl($absolutePath);
-    if (!$url) {
-        return htmlspecialchars($label);
-    }
+    $url = "downloadBuildFile.php?id=" . intval($buildId) . "&type=" . urlencode($type);
 
     return '<a href="' . htmlspecialchars($url) . '" target="_blank">' . htmlspecialchars($label) . '</a>';
 }
@@ -139,9 +120,9 @@ while ($row = mysql_fetch_assoc($res)) {
     <td><?php echo htmlspecialchars($row['version']); ?></td>
     <td><?php echo htmlspecialchars(ofBuildStatusLabel($row['status'])); ?></td>
     <td><?php echo intval($row['requested_by']); ?></td>
-    <td><?php echo ofRenderBuildFileLink($row['opt_path'], 'Download OPT'); ?></td>
-    <td><?php echo ofRenderBuildFileLink($row['db_path'], 'Download DB'); ?></td>
-    <td><?php echo ofRenderBuildFileLink($row['manifest_path'], 'View Manifest'); ?></td>
+    <td><?php echo ofRenderDownloadLink($row['id'], 'opt', 'Download OPT', $row['opt_path']); ?></td>
+    <td><?php echo ofRenderDownloadLink($row['id'], 'db', 'Download DB', $row['db_path']); ?></td>
+    <td><?php echo ofRenderDownloadLink($row['id'], 'manifest', 'View Manifest', $row['manifest_path']); ?></td>
     <td><?php echo htmlspecialchars($row['opt_path']); ?></td>
     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
     <td><?php echo htmlspecialchars($row['finished_at']); ?></td>
