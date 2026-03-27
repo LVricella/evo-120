@@ -20,11 +20,9 @@ function ofAssignTeam($sixTeamId, $profileId) {
     $sixTeamId = intval($sixTeamId);
     $profileId = intval($profileId);
 
-    // Desactivar asignaciones previas
     mysql_query("UPDATE of_team_assignments SET is_active = 0 WHERE sixTeamId = $sixTeamId");
     mysql_query("UPDATE of_team_assignments SET is_active = 0 WHERE profile_id = $profileId");
 
-    // Insertar nueva asignación
     return mysql_query("
         INSERT INTO of_team_assignments (sixTeamId, profile_id, is_active)
         VALUES ($sixTeamId, $profileId, 1)
@@ -33,10 +31,16 @@ function ofAssignTeam($sixTeamId, $profileId) {
 
 function ofGetAssignments() {
     return mysql_query("
-        SELECT *
-        FROM of_team_assignments
-        WHERE is_active = 1
-        ORDER BY sixTeamId ASC
+        SELECT
+            ota.*,
+            st.name AS team_name,
+            wp.name AS player_name
+        FROM of_team_assignments ota
+        LEFT JOIN six_teams st ON st.sixTeamId = ota.sixTeamId
+        LEFT JOIN six_profiles sp ON sp.id = ota.profile_id
+        LEFT JOIN weblm_players wp ON wp.player_id = sp.user_id
+        WHERE ota.is_active = 1
+        ORDER BY ota.sixTeamId ASC
     ");
 }
 
@@ -67,7 +71,7 @@ function ofSetPlayer($sixTeamId, $pesPlayerId, $order) {
 }
 
 // =========================
-// MARKET (base)
+// MARKET
 // =========================
 
 function ofCreateOrder($sellerId, $playerId, $price) {
@@ -115,29 +119,109 @@ function ofGetBuilds() {
 }
 
 // =========================
-// EXPORT SNAPSHOT (CLAVE)
+// SNAPSHOT HELPERS
 // =========================
 
-function ofExportSnapshot() {
-    $teams = [];
+function ofGetAssignmentsMap() {
+    $map = array();
+
+    $res = mysql_query("
+        SELECT
+            ota.sixTeamId,
+            ota.profile_id,
+            st.name AS team_name,
+            wp.name AS player_name
+        FROM of_team_assignments ota
+        LEFT JOIN six_teams st ON st.sixTeamId = ota.sixTeamId
+        LEFT JOIN six_profiles sp ON sp.id = ota.profile_id
+        LEFT JOIN weblm_players wp ON wp.player_id = sp.user_id
+        WHERE ota.is_active = 1
+        ORDER BY ota.sixTeamId ASC
+    ");
+
+    while ($row = mysql_fetch_assoc($res)) {
+        $teamId = intval($row['sixTeamId']);
+
+        $map[$teamId] = array(
+            "profile_id" => intval($row['profile_id']),
+            "team_name" => $row['team_name'],
+            "player_name" => $row['player_name']
+        );
+    }
+
+    return $map;
+}
+
+function ofGetRosterMap() {
+    $teams = array();
+
+    $res = mysql_query("
+        SELECT sixTeamId, pesPlayerId, squad_order, slot_type
+        FROM of_team_roster
+        ORDER BY sixTeamId ASC, squad_order ASC
+    ");
+
+    while ($row = mysql_fetch_assoc($res)) {
+        $teamId = intval($row['sixTeamId']);
+
+        if (!isset($teams[$teamId])) {
+            $teams[$teamId] = array();
+        }
+
+        $teams[$teamId][] = array(
+            "pesPlayerId" => intval($row['pesPlayerId']),
+            "squad_order" => intval($row['squad_order']),
+            "slot_type" => $row['slot_type']
+        );
+    }
+
+    return $teams;
+}
+
+function ofGetSimpleTeamsArray() {
+    $teams = array();
 
     $res = mysql_query("
         SELECT sixTeamId, pesPlayerId, squad_order
         FROM of_team_roster
-        ORDER BY sixTeamId, squad_order
+        ORDER BY sixTeamId ASC, squad_order ASC
     ");
 
     while ($row = mysql_fetch_assoc($res)) {
-        $teamId = $row['sixTeamId'];
+        $teamId = intval($row['sixTeamId']);
 
         if (!isset($teams[$teamId])) {
-            $teams[$teamId] = [];
+            $teams[$teamId] = array();
         }
 
         $teams[$teamId][] = intval($row['pesPlayerId']);
     }
 
-    return json_encode([
-        "teams" => $teams
-    ]);
+    return $teams;
+}
+
+// =========================
+// EXPORT SNAPSHOT
+// =========================
+
+function ofExportSnapshotArray() {
+    $teams = ofGetSimpleTeamsArray();
+    $assignments = ofGetAssignmentsMap();
+    $detailedRoster = ofGetRosterMap();
+
+    return array(
+        "meta" => array(
+            "generated_at" => date("Y-m-d H:i:s"),
+            "generated_unix" => time(),
+            "format_version" => 1,
+            "generator" => "evo-120"
+        ),
+        "teams" => $teams,
+        "assignments" => $assignments,
+        "roster_detail" => $detailedRoster
+    );
+}
+
+function ofExportSnapshot() {
+    return json_encode(ofExportSnapshotArray(), JSON_PRETTY_PRINT);
 }
