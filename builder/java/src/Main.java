@@ -36,6 +36,11 @@ public class Main {
         int[] findSequence = null;
         Integer findSeqStride = 2;
 
+        Integer findWildcardOffset = null;
+        Integer findWildcardLength = null;
+        Integer[] findWildcardSequence = null;
+        Integer findWildcardStride = 2;
+
         for (int i = 0; i < args.length; i++) {
             if ("--base".equals(args[i]) && i + 1 < args.length) {
                 basePath = args[++i];
@@ -73,6 +78,15 @@ public class Main {
                 findSeqLength = parseIntArg(args[++i]);
                 findSequence = parseSequenceArg(args[++i]);
                 findSeqStride = parseIntArg(args[++i]);
+            } else if ("--find-wildcard".equals(args[i]) && i + 3 < args.length) {
+                findWildcardOffset = parseIntArg(args[++i]);
+                findWildcardLength = parseIntArg(args[++i]);
+                findWildcardSequence = parseWildcardSequenceArg(args[++i]);
+            } else if ("--find-wildcard-stride".equals(args[i]) && i + 4 < args.length) {
+                findWildcardOffset = parseIntArg(args[++i]);
+                findWildcardLength = parseIntArg(args[++i]);
+                findWildcardSequence = parseWildcardSequenceArg(args[++i]);
+                findWildcardStride = parseIntArg(args[++i]);
             } else if ("--report".equals(args[i]) && i + 1 < args.length) {
                 reportPath = args[++i];
             }
@@ -109,7 +123,11 @@ public class Main {
                     findSeqOffset,
                     findSeqLength,
                     findSequence,
-                    findSeqStride
+                    findSeqStride,
+                    findWildcardOffset,
+                    findWildcardLength,
+                    findWildcardSequence,
+                    findWildcardStride
                 );
                 return;
             }
@@ -159,7 +177,11 @@ public class Main {
         Integer findSeqOffset,
         Integer findSeqLength,
         int[] findSequence,
-        Integer findSeqStride
+        Integer findSeqStride,
+        Integer findWildcardOffset,
+        Integer findWildcardLength,
+        Integer[] findWildcardSequence,
+        Integer findWildcardStride
     ) throws Exception {
         if (basePath == null) {
             System.out.println("Debug mode requires --base <base_opt>");
@@ -214,7 +236,17 @@ public class Main {
             );
         }
 
-        if (dumpBytesOffset == null && dumpU16Offset == null && compareOffsetA == null && findU16Offset == null && findSeqOffset == null) {
+        if (findWildcardOffset != null && findWildcardLength != null && findWildcardSequence != null) {
+            debugger.findUInt16SequenceWildcard(
+                of,
+                findWildcardOffset.intValue(),
+                findWildcardLength.intValue(),
+                findWildcardSequence,
+                findWildcardStride.intValue()
+            );
+        }
+
+        if (dumpBytesOffset == null && dumpU16Offset == null && compareOffsetA == null && findU16Offset == null && findSeqOffset == null && findWildcardOffset == null) {
             System.out.println("Dumping observed diff region A as UInt16LE...");
             debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START, 24);
 
@@ -275,6 +307,27 @@ public class Main {
         return result;
     }
 
+    private static Integer[] parseWildcardSequenceArg(String value) {
+        String[] parts = value.split(",");
+        List<Integer> values = new ArrayList<Integer>();
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.equals("*")) {
+                values.add(null);
+            } else if (part.length() > 0) {
+                values.add(Integer.valueOf(parseIntArg(part)));
+            }
+        }
+
+        Integer[] result = new Integer[values.size()];
+        for (int i = 0; i < values.size(); i++) {
+            result[i] = values.get(i);
+        }
+
+        return result;
+    }
+
     private static void printUsage() {
         System.out.println("Usage:");
         System.out.println("  Build mode:");
@@ -303,6 +356,12 @@ public class Main {
         System.out.println("");
         System.out.println("  Debug mode find UInt16LE sequence with stride:");
         System.out.println("    java Main --debug --base <base_opt> --find-seq-stride <offset> <length> <v1,v2,v3> <stride>");
+        System.out.println("");
+        System.out.println("  Debug mode find wildcard sequence:");
+        System.out.println("    java Main --debug --base <base_opt> --find-wildcard <offset> <length> <v1,*,v3>");
+        System.out.println("");
+        System.out.println("  Debug mode find wildcard sequence with stride:");
+        System.out.println("    java Main --debug --base <base_opt> --find-wildcard-stride <offset> <length> <v1,*,v3> <stride>");
         System.out.println("");
         System.out.println("  Optional report output:");
         System.out.println("    --report <path_to_txt>");
