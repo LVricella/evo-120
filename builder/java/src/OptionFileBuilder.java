@@ -15,14 +15,14 @@ public class OptionFileBuilder {
         OptionFile of = new OptionFile(basePath);
         SquadEditor squadEditor = new SquadEditor();
         ChecksumUpdater checksumUpdater = new ChecksumUpdater();
+        OptionFileDebugger debugger = new OptionFileDebugger();
 
         System.out.println("==========================================");
         System.out.println("Option File loaded");
         System.out.println("==========================================");
-        System.out.println("File size: " + of.length() + " bytes");
 
-        int first4 = of.readUInt32LE(0);
-        System.out.println("First 4 bytes as UInt32LE: " + first4);
+        debugger.printFileSummary(of);
+        debugger.printKnownAreas(of);
 
         System.out.println("==========================================");
         System.out.println("Applying teams");
@@ -38,6 +38,13 @@ public class OptionFileBuilder {
         }
 
         checksumUpdater.update(of);
+
+        System.out.println("==========================================");
+        System.out.println("Debugging observed regions after writes");
+        System.out.println("==========================================");
+
+        debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START, 16);
+        debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START, 16);
 
         of.save(outputPath);
 
