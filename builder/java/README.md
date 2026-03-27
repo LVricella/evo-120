@@ -1,45 +1,47 @@
 # Java Option File Builder
 
-This folder will contain the real Java-based PES 6 Option File builder.
+This folder contains the Java-based PES 6 Option File builder.
 
 ## Goal
 
 Load a base `KONAMI-WIN32PES6OPT`, apply team roster changes from `snapshot.json`, and write the final global Option File.
 
-## Planned responsibilities
+## Current responsibilities
 
-- read input snapshot JSON
-- load base Option File
-- map each `sixTeamId` to the correct squad block
-- replace squad players in the correct order
-- preserve internal file structure
-- recalculate checksums
-- write final `KONAMI-WIN32PES6OPT`
+At the current stage, the Java builder can:
 
-## Notes
+- read the input snapshot JSON
+- parse `teams -> ordered player IDs`
+- load the base Option File as binary data
+- resolve team offsets from external config
+- write player IDs experimentally into primary and mirror offsets
+- run a placeholder checksum/update step
+- save the output Option File
 
-The future implementation is expected to reuse or replicate logic from existing PES 6 Option File editor classes such as:
+## Important limitation
 
-- `OptionFile`
-- `Squads`
-- `SquadList`
-- `SquadNumList`
+The current build pipeline is still **experimental**.
 
-## Current status
+It does **not yet guarantee**:
+- correct real squad offsets for all teams
+- correct mirrored/internal block logic
+- correct PES 6 checksum recalculation
+- full compatibility with the final in-game Option File format
 
-At this stage, the PHP/cron side already exports:
+## Current Java structure
 
-- `snapshot.json`
-- `manifest.json`
-- build folders
+- `Main.java` → entry point
+- `JsonParser.java` → parses `snapshot.json`
+- `OptionFile.java` → binary read/write wrapper
+- `OptionFileConstants.java` → known OF areas and constants
+- `TeamOffsetResolver.java` → teamId -> offsets
+- `SquadEditor.java` → experimental player writing
+- `ChecksumUpdater.java` → checksum placeholder
+- `OptionFileBuilder.java` → orchestrates the build
 
-The current shell runner only copies the base Option File as a placeholder.
+## External config
 
-The real Java implementation will replace that placeholder.
+Team offsets are currently loaded from:
 
-## Expected CLI usage
-
-A future command should look like:
-
-```bash
-java -jar builder.jar --base /path/to/KONAMI-WIN32PES6OPT --snapshot /path/to/snapshot.json --output /path/to/output/KONAMI-WIN32PES6OPT
+```text
+builder/config/team-offsets.properties
