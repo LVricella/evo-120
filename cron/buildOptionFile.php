@@ -51,6 +51,7 @@ if (!$build) {
 
 $buildId = intval($build['id']);
 $version = $build['version'];
+$requestedBy = intval($build['requested_by']);
 
 echo "Processing build #".$buildId." (".$version.")\n";
 
@@ -83,7 +84,18 @@ $dbPath = $buildDir . '/pes6-db.zip';
 // EXPORT SNAPSHOT
 // =========================
 
-$snapshotJson = ofExportSnapshot();
+$snapshotArray = ofExportSnapshotArray();
+
+// enriquecer snapshot con info del build
+$snapshotArray['build'] = array(
+    'build_id' => $buildId,
+    'version' => $version,
+    'requested_by' => $requestedBy,
+    'prepared_at' => date('Y-m-d H:i:s'),
+    'prepared_unix' => time()
+);
+
+$snapshotJson = json_encode($snapshotArray, JSON_PRETTY_PRINT);
 
 if (!$snapshotJson) {
     mysql_query("
@@ -103,19 +115,29 @@ file_put_contents($jsonPath, $snapshotJson);
 // =========================
 
 $manifest = array(
-    "build_id" => $buildId,
-    "version" => $version,
-    "created_at" => date("Y-m-d H:i:s"),
-    "snapshot_file" => "snapshot.json",
-    "opt_file" => "KONAMI-WIN32PES6OPT",
-    "db_file" => "pes6-db.zip",
-    "status" => "prepared"
+    'build_id' => $buildId,
+    'version' => $version,
+    'status' => 'prepared',
+    'requested_by' => $requestedBy,
+    'created_at' => date('Y-m-d H:i:s'),
+    'created_unix' => time(),
+    'files' => array(
+        'snapshot' => 'snapshot.json',
+        'opt' => 'KONAMI-WIN32PES6OPT',
+        'db' => 'pes6-db.zip'
+    ),
+    'paths' => array(
+        'build_dir' => $buildDir,
+        'snapshot_path' => $jsonPath,
+        'opt_path' => $optPath,
+        'db_path' => $dbPath
+    )
 );
 
 file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
 
 // =========================
-// RUN BUILDER PLACEHOLDER
+// RUN BUILDER
 // =========================
 
 $builderOk = false;
@@ -134,6 +156,8 @@ if (file_exists($builderScript) && file_exists($baseOptPath)) {
     if ($returnCode === 0 && file_exists($optPath)) {
         $builderOk = true;
     }
+} else {
+    echo "Builder script or base Option File missing.\n";
 }
 
 // =========================
@@ -172,6 +196,7 @@ if ($builderOk) {
     mysql_query("
         UPDATE of_builds
         SET status = 'failed',
+            manifest_path = '$manifestPathDb',
             finished_at = NOW()
         WHERE id = $buildId
     ");
