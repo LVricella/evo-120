@@ -26,16 +26,29 @@ public class OptionFileDebugger {
         int lineStart = startOffset;
 
         while (lineStart < end) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder hexPart = new StringBuilder();
+            StringBuilder asciiPart = new StringBuilder();
 
-            sb.append(toHex(lineStart, 8)).append(": ");
+            for (int i = 0; i < 16; i++) {
+                int currentOffset = lineStart + i;
 
-            for (int i = 0; i < 16 && lineStart + i < end; i++) {
-                int value = of.readByte(lineStart + i);
-                sb.append(toHex(value, 2)).append(" ");
+                if (currentOffset < end) {
+                    int value = of.readByte(currentOffset);
+                    hexPart.append(toHex(value, 2)).append(" ");
+                    asciiPart.append(toPrintableAscii(value));
+                } else {
+                    hexPart.append("     ");
+                    asciiPart.append(" ");
+                }
             }
 
-            System.out.println(sb.toString());
+            System.out.println(
+                toHex(lineStart, 8) + ": " +
+                hexPart.toString() +
+                " | " +
+                asciiPart.toString()
+            );
+
             lineStart += 16;
         }
 
@@ -166,5 +179,12 @@ public class OptionFileDebugger {
         }
 
         return "0x" + hex;
+    }
+
+    private char toPrintableAscii(int value) {
+        if (value >= 32 && value <= 126) {
+            return (char) value;
+        }
+        return '.';
     }
 }
