@@ -14,6 +14,7 @@ public class OptionFileBuilder {
     public void build(Map<Integer, List<Integer>> teams) throws Exception {
         OptionFile of = new OptionFile(basePath);
         SquadEditor squadEditor = new SquadEditor();
+        ChecksumUpdater checksumUpdater = new ChecksumUpdater();
 
         System.out.println("==========================================");
         System.out.println("Option File loaded");
@@ -35,6 +36,8 @@ public class OptionFileBuilder {
 
             squadEditor.applyTeamPlayers(of, teamId, players);
         }
+
+        checksumUpdater.update(of);
 
         of.save(outputPath);
 
