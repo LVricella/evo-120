@@ -42,6 +42,21 @@ if (isset($_POST['queueBuild'])) {
     }
 }
 
+// =========================
+// HELPERS
+// =========================
+
+function ofBuildStatusLabel($status) {
+    $status = trim(strtolower($status));
+
+    if ($status == "pending") return "Pending";
+    if ($status == "processing") return "Processing";
+    if ($status == "ready") return "Ready";
+    if ($status == "failed") return "Failed";
+
+    return ucfirst($status);
+}
+
 ?>
 <html>
 <head>
@@ -57,6 +72,8 @@ if (isset($_POST['queueBuild'])) {
     <p><b><?php echo htmlspecialchars($msg); ?></b></p>
 <?php } ?>
 
+<h3>Queue new build</h3>
+
 <form method="post">
     <input type="hidden" name="queueBuild" value="1" />
     <input type="submit" value="Queue New Build" />
@@ -71,10 +88,10 @@ if (isset($_POST['queueBuild'])) {
     <th>ID</th>
     <th>Version</th>
     <th>Status</th>
+    <th>Requested By</th>
     <th>OPT Path</th>
     <th>DB Path</th>
     <th>Manifest Path</th>
-    <th>Requested By</th>
     <th>Created At</th>
     <th>Finished At</th>
 </tr>
@@ -86,11 +103,11 @@ while ($row = mysql_fetch_assoc($res)) {
 <tr>
     <td><?php echo intval($row['id']); ?></td>
     <td><?php echo htmlspecialchars($row['version']); ?></td>
-    <td><?php echo htmlspecialchars($row['status']); ?></td>
+    <td><?php echo htmlspecialchars(ofBuildStatusLabel($row['status'])); ?></td>
+    <td><?php echo intval($row['requested_by']); ?></td>
     <td><?php echo htmlspecialchars($row['opt_path']); ?></td>
     <td><?php echo htmlspecialchars($row['db_path']); ?></td>
     <td><?php echo htmlspecialchars($row['manifest_path']); ?></td>
-    <td><?php echo intval($row['requested_by']); ?></td>
     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
     <td><?php echo htmlspecialchars($row['finished_at']); ?></td>
 </tr>
