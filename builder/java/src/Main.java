@@ -1,190 +1,242 @@
-public class OptionFileDebugger {
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
 
-    public void printFileSummary(OptionFile of) {
-        System.out.println("==========================================");
-        System.out.println("Option File Debug Summary");
-        System.out.println("==========================================");
-        System.out.println("Length: " + of.length() + " bytes");
-        System.out.println("First 4 bytes (UInt32LE): " + of.readUInt32LE(0));
-        System.out.println("Checksum area (UInt32LE): " + of.readUInt32LE(OptionFileConstants.CHECKSUM_OFFSET));
-        System.out.println("==========================================");
-    }
+public class Main {
 
-    public void dumpBytes(OptionFile of, int startOffset, int length) {
-        if (length <= 0) {
-            System.out.println("dumpBytes: invalid length");
-            return;
+    public static void main(String[] args) {
+        String basePath = null;
+        String snapshotPath = null;
+        String outputPath = null;
+        String reportPath = null;
+
+        boolean debugOnly = false;
+
+        Integer dumpBytesOffset = null;
+        Integer dumpBytesLength = null;
+
+        Integer dumpU16Offset = null;
+        Integer dumpU16Count = null;
+
+        Integer compareOffsetA = null;
+        Integer compareOffsetB = null;
+        Integer compareLength = null;
+
+        Integer findU16Offset = null;
+        Integer findU16Length = null;
+        Integer findU16Value = null;
+
+        for (int i = 0; i < args.length; i++) {
+            if ("--base".equals(args[i]) && i + 1 < args.length) {
+                basePath = args[++i];
+            } else if ("--snapshot".equals(args[i]) && i + 1 < args.length) {
+                snapshotPath = args[++i];
+            } else if ("--output".equals(args[i]) && i + 1 < args.length) {
+                outputPath = args[++i];
+            } else if ("--debug".equals(args[i])) {
+                debugOnly = true;
+            } else if ("--dump-bytes".equals(args[i]) && i + 2 < args.length) {
+                dumpBytesOffset = parseIntArg(args[++i]);
+                dumpBytesLength = parseIntArg(args[++i]);
+            } else if ("--dump-u16".equals(args[i]) && i + 2 < args.length) {
+                dumpU16Offset = parseIntArg(args[++i]);
+                dumpU16Count = parseIntArg(args[++i]);
+            } else if ("--compare".equals(args[i]) && i + 3 < args.length) {
+                compareOffsetA = parseIntArg(args[++i]);
+                compareOffsetB = parseIntArg(args[++i]);
+                compareLength = parseIntArg(args[++i]);
+            } else if ("--find-u16".equals(args[i]) && i + 3 < args.length) {
+                findU16Offset = parseIntArg(args[++i]);
+                findU16Length = parseIntArg(args[++i]);
+                findU16Value = parseIntArg(args[++i]);
+            } else if ("--report".equals(args[i]) && i + 1 < args.length) {
+                reportPath = args[++i];
+            }
         }
 
-        System.out.println("==========================================");
-        System.out.println("Byte dump");
-        System.out.println("Start offset: " + startOffset);
-        System.out.println("Length: " + length);
-        System.out.println("==========================================");
+        PrintStream originalOut = System.out;
+        PrintStream reportOut = null;
 
-        int end = startOffset + length;
-        int lineStart = startOffset;
-
-        while (lineStart < end) {
-            StringBuilder hexPart = new StringBuilder();
-            StringBuilder asciiPart = new StringBuilder();
-
-            for (int i = 0; i < 16; i++) {
-                int currentOffset = lineStart + i;
-
-                if (currentOffset < end) {
-                    int value = of.readByte(currentOffset);
-                    hexPart.append(toHex(value, 2)).append(" ");
-                    asciiPart.append(toPrintableAscii(value));
-                } else {
-                    hexPart.append("     ");
-                    asciiPart.append(" ");
+        try {
+            if (reportPath != null) {
+                File reportFile = new File(reportPath);
+                File parent = reportFile.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
                 }
+                reportOut = new PrintStream(reportFile);
+                System.setOut(reportOut);
             }
 
-            System.out.println(
-                toHex(lineStart, 8) + ": " +
-                hexPart.toString() +
-                " | " +
-                asciiPart.toString()
-            );
-
-            lineStart += 16;
-        }
-
-        System.out.println("==========================================");
-    }
-
-    public void dumpUInt16LE(OptionFile of, int startOffset, int count) {
-        if (count <= 0) {
-            System.out.println("dumpUInt16LE: invalid count");
-            return;
-        }
-
-        System.out.println("==========================================");
-        System.out.println("UInt16LE dump");
-        System.out.println("Start offset: " + startOffset);
-        System.out.println("Count: " + count);
-        System.out.println("==========================================");
-
-        for (int i = 0; i < count; i++) {
-            int offset = startOffset + (i * 2);
-            int value = of.readUInt16LE(offset);
-
-            System.out.println(
-                "[" + i + "] " +
-                "offset=" + offset +
-                " hex=" + toHex(offset, 8) +
-                " value=" + value +
-                " valueHex=" + toHex(value, 4)
-            );
-        }
-
-        System.out.println("==========================================");
-    }
-
-    public void compareRegions(OptionFile of, int offsetA, int offsetB, int length) {
-        if (length <= 0) {
-            System.out.println("compareRegions: invalid length");
-            return;
-        }
-
-        System.out.println("==========================================");
-        System.out.println("Compare regions");
-        System.out.println("A: " + offsetA + " (" + toHex(offsetA, 8) + ")");
-        System.out.println("B: " + offsetB + " (" + toHex(offsetB, 8) + ")");
-        System.out.println("Length: " + length);
-        System.out.println("==========================================");
-
-        int diffCount = 0;
-
-        for (int i = 0; i < length; i++) {
-            int a = of.readByte(offsetA + i);
-            int b = of.readByte(offsetB + i);
-
-            if (a != b) {
-                diffCount++;
-                System.out.println(
-                    "diff @ +" + i +
-                    " | A=" + toHex(a, 2) +
-                    " | B=" + toHex(b, 2)
+            if (debugOnly) {
+                runDebugOnly(
+                    basePath,
+                    dumpBytesOffset,
+                    dumpBytesLength,
+                    dumpU16Offset,
+                    dumpU16Count,
+                    compareOffsetA,
+                    compareOffsetB,
+                    compareLength,
+                    findU16Offset,
+                    findU16Length,
+                    findU16Value
                 );
+                return;
+            }
+
+            if (basePath == null || snapshotPath == null || outputPath == null) {
+                printUsage();
+                System.exit(1);
+            }
+
+            String json = readAll(new File(snapshotPath));
+            Map<Integer, List<Integer>> teams = JsonParser.parseSnapshot(json);
+
+            System.out.println("Teams parsed: " + teams.size());
+
+            OptionFileBuilder builder = new OptionFileBuilder(basePath, outputPath);
+            builder.build(teams);
+
+            System.out.println("Build completed.");
+
+        } catch (Exception e) {
+            System.out.println("Builder failed: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        } finally {
+            if (reportOut != null) {
+                reportOut.flush();
+                reportOut.close();
+                System.setOut(originalOut);
+                System.out.println("Report written to: " + reportPath);
             }
         }
-
-        if (diffCount == 0) {
-            System.out.println("No differences found.");
-        } else {
-            System.out.println("Total differences: " + diffCount);
-        }
-
-        System.out.println("==========================================");
     }
 
-    public void printKnownAreas(OptionFile of) {
-        System.out.println("==========================================");
-        System.out.println("Known / suspected areas");
-        System.out.println("==========================================");
+    private static void runDebugOnly(
+        String basePath,
+        Integer dumpBytesOffset,
+        Integer dumpBytesLength,
+        Integer dumpU16Offset,
+        Integer dumpU16Count,
+        Integer compareOffsetA,
+        Integer compareOffsetB,
+        Integer compareLength,
+        Integer findU16Offset,
+        Integer findU16Length,
+        Integer findU16Value
+    ) throws Exception {
+        if (basePath == null) {
+            System.out.println("Debug mode requires --base <base_opt>");
+            printUsage();
+            System.exit(1);
+        }
 
-        System.out.println(
-            "CHECKSUM: " +
-            OptionFileConstants.CHECKSUM_OFFSET + "-" +
-            (OptionFileConstants.CHECKSUM_OFFSET + OptionFileConstants.CHECKSUM_LENGTH - 1)
-        );
-
-        System.out.println(
-            "SQUAD_BLOCK_1: " +
-            OptionFileConstants.SQUAD_BLOCK_1_START + "-" +
-            OptionFileConstants.SQUAD_BLOCK_1_END
-        );
-
-        System.out.println(
-            "SQUAD_BLOCK_2: " +
-            OptionFileConstants.SQUAD_BLOCK_2_START + "-" +
-            OptionFileConstants.SQUAD_BLOCK_2_END
-        );
-
-        System.out.println(
-            "SQUAD_BLOCK_3: " +
-            OptionFileConstants.SQUAD_BLOCK_3_START + "-" +
-            OptionFileConstants.SQUAD_BLOCK_3_END
-        );
-
-        System.out.println(
-            "OBSERVED_DIFF_A: " +
-            OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START + "-" +
-            OptionFileConstants.OBSERVED_DIFF_BLOCK_A_END
-        );
-
-        System.out.println(
-            "OBSERVED_DIFF_B: " +
-            OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START + "-" +
-            OptionFileConstants.OBSERVED_DIFF_BLOCK_B_END
-        );
-
-        System.out.println("Current checksum UInt32LE: " + of.readUInt32LE(OptionFileConstants.CHECKSUM_OFFSET));
+        OptionFile of = new OptionFile(basePath);
+        OptionFileDebugger debugger = new OptionFileDebugger();
 
         System.out.println("==========================================");
+        System.out.println("DEBUG ONLY MODE");
+        System.out.println("==========================================");
+
+        debugger.printFileSummary(of);
+        debugger.printKnownAreas(of);
+
+        if (dumpBytesOffset != null && dumpBytesLength != null) {
+            debugger.dumpBytes(of, dumpBytesOffset.intValue(), dumpBytesLength.intValue());
+        }
+
+        if (dumpU16Offset != null && dumpU16Count != null) {
+            debugger.dumpUInt16LE(of, dumpU16Offset.intValue(), dumpU16Count.intValue());
+        }
+
+        if (compareOffsetA != null && compareOffsetB != null && compareLength != null) {
+            debugger.compareRegions(
+                of,
+                compareOffsetA.intValue(),
+                compareOffsetB.intValue(),
+                compareLength.intValue()
+            );
+        }
+
+        if (findU16Offset != null && findU16Length != null && findU16Value != null) {
+            debugger.findUInt16Value(
+                of,
+                findU16Offset.intValue(),
+                findU16Length.intValue(),
+                findU16Value.intValue()
+            );
+        }
+
+        if (dumpBytesOffset == null && dumpU16Offset == null && compareOffsetA == null && findU16Offset == null) {
+            System.out.println("Dumping observed diff region A as UInt16LE...");
+            debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START, 24);
+
+            System.out.println("Dumping observed diff region B as UInt16LE...");
+            debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START, 24);
+
+            System.out.println("Comparing observed diff regions A and B...");
+            debugger.compareRegions(
+                of,
+                OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START,
+                OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START,
+                64
+            );
+        }
+
+        System.out.println("Debug completed.");
     }
 
-    private String toHex(int value, int digits) {
-        String hex = Integer.toHexString(value).toUpperCase();
+    private static String readAll(File file) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line;
 
-        while (hex.length() < digits) {
-            hex = "0" + hex;
+        while ((line = br.readLine()) != null) {
+            sb.append(line);
         }
 
-        if (hex.length() > digits) {
-            hex = hex.substring(hex.length() - digits);
-        }
-
-        return "0x" + hex;
+        br.close();
+        return sb.toString();
     }
 
-    private char toPrintableAscii(int value) {
-        if (value >= 32 && value <= 126) {
-            return (char) value;
+    private static int parseIntArg(String value) {
+        String v = value.trim().toLowerCase();
+
+        if (v.startsWith("0x")) {
+            return Integer.parseInt(v.substring(2), 16);
         }
-        return '.';
+
+        return Integer.parseInt(v);
+    }
+
+    private static void printUsage() {
+        System.out.println("Usage:");
+        System.out.println("  Build mode:");
+        System.out.println("    java Main --base <base_opt> --snapshot <snapshot_json> --output <output_opt>");
+        System.out.println("");
+        System.out.println("  Debug mode:");
+        System.out.println("    java Main --debug --base <base_opt>");
+        System.out.println("");
+        System.out.println("  Debug mode with byte dump:");
+        System.out.println("    java Main --debug --base <base_opt> --dump-bytes <offset> <length>");
+        System.out.println("");
+        System.out.println("  Debug mode with UInt16LE dump:");
+        System.out.println("    java Main --debug --base <base_opt> --dump-u16 <offset> <count>");
+        System.out.println("");
+        System.out.println("  Debug mode with region compare:");
+        System.out.println("    java Main --debug --base <base_opt> --compare <offsetA> <offsetB> <length>");
+        System.out.println("");
+        System.out.println("  Debug mode find UInt16LE value:");
+        System.out.println("    java Main --debug --base <base_opt> --find-u16 <offset> <length> <value>");
+        System.out.println("");
+        System.out.println("  Optional report output:");
+        System.out.println("    --report <path_to_txt>");
+        System.out.println("");
+        System.out.println("Offsets and values can be decimal or hexadecimal, e.g. 657956 or 0x0A0A24");
     }
 }
