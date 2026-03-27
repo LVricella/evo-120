@@ -70,6 +70,27 @@ function ofSetPlayer($sixTeamId, $pesPlayerId, $order) {
     ");
 }
 
+function ofDeleteRosterSlot($sixTeamId, $order) {
+    $sixTeamId = intval($sixTeamId);
+    $order = intval($order);
+
+    return mysql_query("
+        DELETE FROM of_team_roster
+        WHERE sixTeamId = $sixTeamId
+          AND squad_order = $order
+        LIMIT 1
+    ");
+}
+
+function ofClearRoster($sixTeamId) {
+    $sixTeamId = intval($sixTeamId);
+
+    return mysql_query("
+        DELETE FROM of_team_roster
+        WHERE sixTeamId = $sixTeamId
+    ");
+}
+
 // =========================
 // MARKET
 // =========================
