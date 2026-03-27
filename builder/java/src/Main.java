@@ -10,6 +10,7 @@ public class Main {
         String basePath = null;
         String snapshotPath = null;
         String outputPath = null;
+        boolean debugOnly = false;
 
         for (int i = 0; i < args.length; i++) {
             if ("--base".equals(args[i]) && i + 1 < args.length) {
@@ -18,16 +19,22 @@ public class Main {
                 snapshotPath = args[++i];
             } else if ("--output".equals(args[i]) && i + 1 < args.length) {
                 outputPath = args[++i];
+            } else if ("--debug".equals(args[i])) {
+                debugOnly = true;
             }
         }
 
-        if (basePath == null || snapshotPath == null || outputPath == null) {
-            System.out.println("Usage:");
-            System.out.println("java Main --base <base_opt> --snapshot <snapshot_json> --output <output_opt>");
-            System.exit(1);
-        }
-
         try {
+            if (debugOnly) {
+                runDebugOnly(basePath);
+                return;
+            }
+
+            if (basePath == null || snapshotPath == null || outputPath == null) {
+                printUsage();
+                System.exit(1);
+            }
+
             String json = readAll(new File(snapshotPath));
             Map<Integer, List<Integer>> teams = JsonParser.parseSnapshot(json);
 
@@ -45,6 +52,40 @@ public class Main {
         }
     }
 
+    private static void runDebugOnly(String basePath) throws Exception {
+        if (basePath == null) {
+            System.out.println("Debug mode requires --base <base_opt>");
+            printUsage();
+            System.exit(1);
+        }
+
+        OptionFile of = new OptionFile(basePath);
+        OptionFileDebugger debugger = new OptionFileDebugger();
+
+        System.out.println("==========================================");
+        System.out.println("DEBUG ONLY MODE");
+        System.out.println("==========================================");
+
+        debugger.printFileSummary(of);
+        debugger.printKnownAreas(of);
+
+        System.out.println("Dumping observed diff region A as UInt16LE...");
+        debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START, 24);
+
+        System.out.println("Dumping observed diff region B as UInt16LE...");
+        debugger.dumpUInt16LE(of, OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START, 24);
+
+        System.out.println("Comparing observed diff regions A and B...");
+        debugger.compareRegions(
+            of,
+            OptionFileConstants.OBSERVED_DIFF_BLOCK_A_START,
+            OptionFileConstants.OBSERVED_DIFF_BLOCK_B_START,
+            64
+        );
+
+        System.out.println("Debug completed.");
+    }
+
     private static String readAll(File file) throws Exception {
         StringBuilder sb = new StringBuilder();
         BufferedReader br = new BufferedReader(new FileReader(file));
@@ -56,5 +97,14 @@ public class Main {
 
         br.close();
         return sb.toString();
+    }
+
+    private static void printUsage() {
+        System.out.println("Usage:");
+        System.out.println("  Build mode:");
+        System.out.println("    java Main --base <base_opt> --snapshot <snapshot_json> --output <output_opt>");
+        System.out.println("");
+        System.out.println("  Debug mode:");
+        System.out.println("    java Main --debug --base <base_opt>");
     }
 }
