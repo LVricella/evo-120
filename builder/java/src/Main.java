@@ -29,10 +29,12 @@ public class Main {
         Integer findU16Offset = null;
         Integer findU16Length = null;
         Integer findU16Value = null;
+        Integer findU16Stride = 2;
 
         Integer findSeqOffset = null;
         Integer findSeqLength = null;
         int[] findSequence = null;
+        Integer findSeqStride = 2;
 
         for (int i = 0; i < args.length; i++) {
             if ("--base".equals(args[i]) && i + 1 < args.length) {
@@ -57,10 +59,20 @@ public class Main {
                 findU16Offset = parseIntArg(args[++i]);
                 findU16Length = parseIntArg(args[++i]);
                 findU16Value = parseIntArg(args[++i]);
+            } else if ("--find-u16-stride".equals(args[i]) && i + 4 < args.length) {
+                findU16Offset = parseIntArg(args[++i]);
+                findU16Length = parseIntArg(args[++i]);
+                findU16Value = parseIntArg(args[++i]);
+                findU16Stride = parseIntArg(args[++i]);
             } else if ("--find-seq".equals(args[i]) && i + 3 < args.length) {
                 findSeqOffset = parseIntArg(args[++i]);
                 findSeqLength = parseIntArg(args[++i]);
                 findSequence = parseSequenceArg(args[++i]);
+            } else if ("--find-seq-stride".equals(args[i]) && i + 4 < args.length) {
+                findSeqOffset = parseIntArg(args[++i]);
+                findSeqLength = parseIntArg(args[++i]);
+                findSequence = parseSequenceArg(args[++i]);
+                findSeqStride = parseIntArg(args[++i]);
             } else if ("--report".equals(args[i]) && i + 1 < args.length) {
                 reportPath = args[++i];
             }
@@ -93,9 +105,11 @@ public class Main {
                     findU16Offset,
                     findU16Length,
                     findU16Value,
+                    findU16Stride,
                     findSeqOffset,
                     findSeqLength,
-                    findSequence
+                    findSequence,
+                    findSeqStride
                 );
                 return;
             }
@@ -141,9 +155,11 @@ public class Main {
         Integer findU16Offset,
         Integer findU16Length,
         Integer findU16Value,
+        Integer findU16Stride,
         Integer findSeqOffset,
         Integer findSeqLength,
-        int[] findSequence
+        int[] findSequence,
+        Integer findSeqStride
     ) throws Exception {
         if (basePath == null) {
             System.out.println("Debug mode requires --base <base_opt>");
@@ -183,7 +199,8 @@ public class Main {
                 of,
                 findU16Offset.intValue(),
                 findU16Length.intValue(),
-                findU16Value.intValue()
+                findU16Value.intValue(),
+                findU16Stride.intValue()
             );
         }
 
@@ -192,7 +209,8 @@ public class Main {
                 of,
                 findSeqOffset.intValue(),
                 findSeqLength.intValue(),
-                findSequence
+                findSequence,
+                findSeqStride.intValue()
             );
         }
 
@@ -277,8 +295,14 @@ public class Main {
         System.out.println("  Debug mode find UInt16LE value:");
         System.out.println("    java Main --debug --base <base_opt> --find-u16 <offset> <length> <value>");
         System.out.println("");
+        System.out.println("  Debug mode find UInt16LE value with stride:");
+        System.out.println("    java Main --debug --base <base_opt> --find-u16-stride <offset> <length> <value> <stride>");
+        System.out.println("");
         System.out.println("  Debug mode find UInt16LE sequence:");
         System.out.println("    java Main --debug --base <base_opt> --find-seq <offset> <length> <v1,v2,v3>");
+        System.out.println("");
+        System.out.println("  Debug mode find UInt16LE sequence with stride:");
+        System.out.println("    java Main --debug --base <base_opt> --find-seq-stride <offset> <length> <v1,v2,v3> <stride>");
         System.out.println("");
         System.out.println("  Optional report output:");
         System.out.println("    --report <path_to_txt>");
