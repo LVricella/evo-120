@@ -121,6 +121,43 @@ public class OptionFileDebugger {
         System.out.println("==========================================");
     }
 
+    public void findUInt16Value(OptionFile of, int startOffset, int length, int targetValue) {
+        if (length <= 0) {
+            System.out.println("findUInt16Value: invalid length");
+            return;
+        }
+
+        System.out.println("==========================================");
+        System.out.println("Find UInt16LE value");
+        System.out.println("Start offset: " + startOffset + " (" + toHex(startOffset, 8) + ")");
+        System.out.println("Length: " + length);
+        System.out.println("Target value: " + targetValue + " (" + toHex(targetValue, 4) + ")");
+        System.out.println("==========================================");
+
+        int end = startOffset + length;
+        int found = 0;
+
+        for (int offset = startOffset; offset + 1 < end; offset += 2) {
+            int value = of.readUInt16LE(offset);
+            if (value == targetValue) {
+                found++;
+                System.out.println(
+                    "match #" + found +
+                    " at offset=" + offset +
+                    " (" + toHex(offset, 8) + ")"
+                );
+            }
+        }
+
+        if (found == 0) {
+            System.out.println("No matches found.");
+        } else {
+            System.out.println("Total matches: " + found);
+        }
+
+        System.out.println("==========================================");
+    }
+
     public void printKnownAreas(OptionFile of) {
         System.out.println("==========================================");
         System.out.println("Known / suspected areas");
