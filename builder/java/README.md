@@ -17,6 +17,7 @@ At the current stage, the Java builder can:
 - write player IDs experimentally into primary and mirror offsets
 - run a placeholder checksum/update step
 - save the output Option File
+- run in debug-only mode against a base OF
 
 ## Important limitation
 
@@ -31,32 +32,39 @@ It does NOT yet guarantee:
 
 ## Java structure
 
-- Main.java → entry point  
-- JsonParser.java → parses snapshot  
-- OptionFile.java → binary reader/writer  
-- OptionFileConstants.java → known OF offsets  
-- TeamOffsetResolver.java → teamId → offsets  
-- SquadEditor.java → squad writing logic  
-- ChecksumUpdater.java → checksum placeholder  
-- OptionFileBuilder.java → orchestrator  
+- `Main.java` → entry point
+- `JsonParser.java` → parses snapshot
+- `OptionFile.java` → binary reader/writer
+- `OptionFileConstants.java` → known OF offsets
+- `TeamOffsetResolver.java` → `teamId -> offsets`
+- `SquadEditor.java` → squad writing logic
+- `ChecksumUpdater.java` → checksum placeholder
+- `OptionFileDebugger.java` → debug and inspection tools
+- `OptionFileBuilder.java` → orchestrator
 
 ## External config
 
 Team offsets are loaded from:
 
-builder/config/team-offsets.properties
+`builder/config/team-offsets.properties`
 
 Example:
 
-teamId=primaryOffset,mirrorOffset  
-1=0x0A1080,0x0A3080  
+`teamId=primaryOffset,mirrorOffset`  
+`1=0x0A1080,0x0A3080`
 
 ## CLI usage
 
-java Main --base /path/to/KONAMI-WIN32PES6OPT --snapshot /path/to/snapshot.json --output /path/to/output/KONAMI-WIN32PES6OPT
+### Build mode
+
+`java Main --base /path/to/KONAMI-WIN32PES6OPT --snapshot /path/to/snapshot.json --output /path/to/output/KONAMI-WIN32PES6OPT`
+
+### Debug mode
+
+`java Main --debug --base /path/to/KONAMI-WIN32PES6OPT`
 
 ## Next milestone
 
-- replace placeholder offsets with real ones  
-- validate real squad write locations  
-- implement correct checksum logic  
+- replace placeholder offsets with real ones
+- validate real squad write locations
+- implement correct checksum logic
