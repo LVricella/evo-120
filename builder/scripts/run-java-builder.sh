@@ -9,7 +9,9 @@ if [ -z "$BASE_OPT" ] || [ -z "$SNAPSHOT_JSON" ] || [ -z "$OUTPUT_OPT" ]; then
   exit 1
 fi
 
-JAVA_SRC_DIR="$(cd "$(dirname "$0")/../java/src" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+JAVA_SRC_DIR="$(cd "$SCRIPT_DIR/../java/src" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 if [ ! -f "$BASE_OPT" ]; then
   echo "Base Option File not found: $BASE_OPT"
@@ -23,11 +25,13 @@ fi
 
 cd "$JAVA_SRC_DIR" || exit 1
 
-javac Main.java
+javac *.java
 if [ $? -ne 0 ]; then
   echo "Java compilation failed."
   exit 1
 fi
 
-java Main --base "$BASE_OPT" --snapshot "$SNAPSHOT_JSON" --output "$OUTPUT_OPT"
+cd "$PROJECT_ROOT" || exit 1
+
+java -cp "$JAVA_SRC_DIR" Main --base "$BASE_OPT" --snapshot "$SNAPSHOT_JSON" --output "$OUTPUT_OPT"
 exit $?
