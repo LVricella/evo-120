@@ -18,6 +18,7 @@ At the current stage, the Java builder can:
 - run a placeholder checksum/update step
 - save the output Option File
 - run in debug-only mode against a base OF
+- write debug output to a text report file
 
 ## Important limitation
 
@@ -62,6 +63,28 @@ Example:
 ### Debug mode
 
 `java Main --debug --base /path/to/KONAMI-WIN32PES6OPT`
+
+### Debug mode with byte dump
+
+`java Main --debug --base /path/to/KONAMI-WIN32PES6OPT --dump-bytes 0x0A1080 64`
+
+### Debug mode with UInt16LE dump
+
+`java Main --debug --base /path/to/KONAMI-WIN32PES6OPT --dump-u16 0x0A1080 32`
+
+### Debug mode with region compare
+
+`java Main --debug --base /path/to/KONAMI-WIN32PES6OPT --compare 0x0A1080 0x0A3080 64`
+
+### Save report to a file
+
+Add:
+
+`--report /path/to/report.txt`
+
+Example:
+
+`java Main --debug --base /path/to/KONAMI-WIN32PES6OPT --dump-u16 0x0A1080 32 --report /path/to/report.txt`
 
 ## Next milestone
 
