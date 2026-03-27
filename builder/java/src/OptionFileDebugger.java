@@ -122,8 +122,17 @@ public class OptionFileDebugger {
     }
 
     public void findUInt16Value(OptionFile of, int startOffset, int length, int targetValue) {
+        findUInt16Value(of, startOffset, length, targetValue, 2);
+    }
+
+    public void findUInt16Value(OptionFile of, int startOffset, int length, int targetValue, int stride) {
         if (length <= 0) {
             System.out.println("findUInt16Value: invalid length");
+            return;
+        }
+
+        if (stride <= 0) {
+            System.out.println("findUInt16Value: invalid stride");
             return;
         }
 
@@ -131,13 +140,14 @@ public class OptionFileDebugger {
         System.out.println("Find UInt16LE value");
         System.out.println("Start offset: " + startOffset + " (" + toHex(startOffset, 8) + ")");
         System.out.println("Length: " + length);
+        System.out.println("Stride: " + stride);
         System.out.println("Target value: " + targetValue + " (" + toHex(targetValue, 4) + ")");
         System.out.println("==========================================");
 
         int end = startOffset + length;
         int found = 0;
 
-        for (int offset = startOffset; offset + 1 < end; offset += 2) {
+        for (int offset = startOffset; offset + 1 < end; offset += stride) {
             int value = of.readUInt16LE(offset);
             if (value == targetValue) {
                 found++;
@@ -159,6 +169,10 @@ public class OptionFileDebugger {
     }
 
     public void findUInt16Sequence(OptionFile of, int startOffset, int length, int[] sequence) {
+        findUInt16Sequence(of, startOffset, length, sequence, 2);
+    }
+
+    public void findUInt16Sequence(OptionFile of, int startOffset, int length, int[] sequence, int stride) {
         if (length <= 0) {
             System.out.println("findUInt16Sequence: invalid length");
             return;
@@ -169,10 +183,16 @@ public class OptionFileDebugger {
             return;
         }
 
+        if (stride <= 0) {
+            System.out.println("findUInt16Sequence: invalid stride");
+            return;
+        }
+
         System.out.println("==========================================");
         System.out.println("Find UInt16LE sequence");
         System.out.println("Start offset: " + startOffset + " (" + toHex(startOffset, 8) + ")");
         System.out.println("Length: " + length);
+        System.out.println("Stride: " + stride);
         System.out.print("Sequence: ");
         for (int i = 0; i < sequence.length; i++) {
             if (i > 0) System.out.print(", ");
@@ -183,13 +203,13 @@ public class OptionFileDebugger {
 
         int end = startOffset + length;
         int found = 0;
-        int bytesNeeded = sequence.length * 2;
+        int bytesNeeded = ((sequence.length - 1) * stride) + 2;
 
-        for (int offset = startOffset; offset + bytesNeeded - 1 < end; offset += 2) {
+        for (int offset = startOffset; offset + bytesNeeded - 1 < end; offset += stride) {
             boolean match = true;
 
             for (int i = 0; i < sequence.length; i++) {
-                int value = of.readUInt16LE(offset + (i * 2));
+                int value = of.readUInt16LE(offset + (i * stride));
                 if (value != sequence[i]) {
                     match = false;
                     break;
